@@ -1,4 +1,4 @@
-function __printHeader()
+local function __printHeader()
     term.clear()
     term.setCursorPos(1,1)
     print("===================")
@@ -116,6 +116,4 @@ end
 os.sleep(1.5)
 print("Loading Brain...");
 os.sleep(1.5)
-print("ready")
-os.sleep(1.5)
-require("brain")
+require("./brain")
