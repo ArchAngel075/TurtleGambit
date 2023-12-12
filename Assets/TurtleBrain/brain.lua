@@ -1,5 +1,11 @@
 settings.load();
-
+local function __printHeader()
+    term.clear()
+    term.setCursorPos(1,1)
+    print("===================")
+    print("===TURTLE GAMBIT===")
+    print("===================")
+end
 function log(...)
     print(...);
     if(fs.getSize("latest.log") > 167693) then fs.delete("latest.log"); log("truncated local log file") end
