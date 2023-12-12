@@ -68,7 +68,7 @@ if env == "disk/startup.lua" then
             serverName = read();
         end
         local f = fs.open("_server","w")
-        f.write("return \"" .. serverName .. "\"")
+        f.write(serverName)
         f.close()
     end
     
@@ -82,7 +82,7 @@ if env == "disk/startup.lua" then
             addr= read();
         end
         local f = fs.open("_address","w")
-        f.write("return \"" .. addr .. "\"")
+        f.write(addr)
         f.close()
     end
     sleep(1.5);
