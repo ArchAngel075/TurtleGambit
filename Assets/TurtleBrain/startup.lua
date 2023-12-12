@@ -99,7 +99,6 @@ if not fs.exists("brain.lua") then
     brainFile.close()
     print("Turtle Brain received successfully...");
     os.sleep(1.5)
-    os.reboot()
 end
 
 if not fs.exists("json.lua") then
@@ -113,7 +112,6 @@ if not fs.exists("json.lua") then
     brainFile.close()
     print("Turtle JSON module received successfully...");
     os.sleep(1.5)
-    os.reboot()
 end
 print("Loading Brain...");
 os.sleep(1.5)
