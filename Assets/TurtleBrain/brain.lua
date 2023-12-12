@@ -56,7 +56,7 @@ server = f.readAll();
 f.close()
 
 sock = false;
-local json = require("json");
+local json = require("./json");
 function send(data,type)
     logWithoutReport("sending",type or "MESSAGE")
     parallel.waitForAny(function() sock.send(json.encode({turtleId=os.getComputerID(),Type=type or 2,Data=json.encode(data)})) end);
