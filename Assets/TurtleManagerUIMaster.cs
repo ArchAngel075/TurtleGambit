@@ -1,5 +1,7 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -360,7 +362,7 @@ public class TurtleManagerUIMaster : MonoBehaviour
                 }
             }
             //Debug.LogWarningFormat("results:{0}", results.Count);
-        }
+        } 
 
         if (selectedTurtle)
         {
@@ -384,7 +386,24 @@ public class TurtleManagerUIMaster : MonoBehaviour
             }
             else
             {
-                GameObject.Find("ItemHoverBar").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                if(! EventSystem.current.IsPointerOverGameObject())
+                {
+                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                    RaycastHit hit = Physics.RaycastAll(ray, 100).ToList().FirstOrDefault(e => { return e.transform.gameObject.GetComponent<GambitBlock>() != null; });
+                    if (!EqualityComparer<RaycastHit>.Default.Equals(hit, default(RaycastHit)))
+                    {
+                        GambitBlock block = hit.transform.gameObject.GetComponent<GambitBlock>();
+                        GameObject.Find("ItemHoverBar").GetComponentInChildren<TextMeshProUGUI>().text = block.blockName;
+                    }
+                    else
+                    {
+                        GameObject.Find("ItemHoverBar").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                    }
+                }
+                else
+                {
+                    GameObject.Find("ItemHoverBar").GetComponentInChildren<TextMeshProUGUI>().text = "";
+                }
             }
         }
         else
@@ -688,6 +707,16 @@ public class TurtleManagerUIMaster : MonoBehaviour
         if (selectedTurtle != null)
         {
             selectedTurtle.Reboot();
+        }
+    }
+
+    public void DoEvaluate()
+    {
+        if (selectedTurtle != null)
+        {
+            string command = UIReference.instance.EvaluateInput.GetComponentInChildren<TMP_InputField>().text;
+            selectedTurtle.Send(command);
+            UIReference.instance.EvaluateInput.GetComponentInChildren<TMP_InputField>().text = "";
         }
     }
 
