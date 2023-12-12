@@ -9,7 +9,7 @@ __printHeader();
 print("Booting....Please wait...");
 os.sleep(1.5);
 
-local __version__ = "turtle-brain-pull";
+local __version__ = "main";
 
 if(	not fs.exists("_version") and fs.exists("disk/_version") ) then
     print("Version copied from disk")

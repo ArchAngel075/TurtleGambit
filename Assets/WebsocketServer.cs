@@ -20,6 +20,7 @@ public class WebsocketServer : MonoBehaviour
     public static WebsocketServer Instance { get; private set; }
     private WebSocketServer wssv;
     public MissionControl MissionControl;
+    public string serverName;
 
     Dictionary<string, GambitStream> Streams = new Dictionary<string, GambitStream>();
 
@@ -28,13 +29,10 @@ public class WebsocketServer : MonoBehaviour
     {
         Instance = this;
 
-        // Set up the WebSocket server on a specific port (e.g., 8080)
-
-        wssv = new WebSocketServer("ws://192.168.0.110:5757");
+        wssv = new WebSocketServer(System.Net.IPAddress.Any , 5757);
 
         // Add the WebSocket service
-        wssv.AddWebSocketService<WebSocketConnection>("/gambit", s => {
-            Debug.Log("NEW S->");
+        wssv.AddWebSocketService<WebSocketConnection>("/" + serverName, s => {
             s.GUID = Guid.NewGuid().ToString();
             
             var outt = new ConcurrentQueue<string>();
