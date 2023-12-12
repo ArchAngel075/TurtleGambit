@@ -40,66 +40,15 @@ f.write("{Begin}\n");
 f.close()
 f = nil;
 
-local _version = "0.95"
-if(not fs.exists("startup.lua") and fs.exists("disk/startup.lua")) then
-    fs.copy("disk/startup.lua","startup.lua")
-    os.reboot();
-end
+local url
+local f = fs.open("_address","r")
+url = f.readAll();
+f.close()
+local server
+local f = fs.open("_server","r")
+server = f.readAll();
+f.close()
 
-if(not fs.exists("json.lua") and fs.exists("disk/json.lua")) then
-    fs.copy("disk/json.lua","json.lua")
-    os.reboot();
-end
-
-if(	not fs.exists("_address.lua") and fs.exists("disk/_address.lua") ) then
-    fs.copy("disk/_address.lua","_address.lua")
-    os.reboot();
-end
-
-if(	not fs.exists("_server.lua") and fs.exists("disk/_server.lua") ) then
-    fs.copy("disk/_server.lua","_server.lua")
-    os.reboot();
-end
-
-if(not fs.exists("_server.lua")) then
-    term.clear()
-    term.setCursorPos(1,1)
-    log("Please provide server name @[_server.lua] OR alternatively enter now > ");
-    local serverName = read();
-    if(serverName) then
-        local f = fs.open("_server.lua","w")
-        f.write("return \"" .. serverName .. "\"")
-        f.close()
-        os.reboot();
-    end
-end
-
-if(not fs.exists("_address.lua")) then
-    term.clear()
-    term.setCursorPos(1,1)
-    log("Please provide address @[_address.lua] OR alternatively enter now > ");
-    local addr= read();
-    if(addr) then
-        local f = fs.open("_address.lua","w")
-        f.write("return \"" .. addr .. "\"")
-        f.close()
-        os.reboot();
-    end
-end
-
-if(not fs.exists("json.lua")) then
-    term.clear()
-    term.setCursorPos(1,1)
-    log("Fetching json.lua");
-	shell.run("pastebin","get","awgNsLnT","json.lua")
-end
-
-term.clear();
-term.setCursorPos(1,1)
-log("------GAMBIT " .. _version .. "------")
-
-local url = require("_address")
-local server = require("_server")
 sock = false;
 local json = require("json");
 function send(data,type)
@@ -493,8 +442,8 @@ function procedure()
 end
 
 function message_dequeue()
-    log("BEGIN MESSAGE EXPECTATION")
     while true do
+        __printHeader();
         local event, murl, message
         -- print("Fetch next event...")
         event, murl, message = os.pullEvent()
@@ -856,38 +805,45 @@ function helpers.observeFuelLevel()
 end
 
 ------------------------
-while true do
-    log("try to connect...");
-    sock,reason = http.websocket("ws://" .. url .."/" .. server)
-    if(sock) then
-        log("connected. Send handshake.");
-        local event, murl, message
-        event, murl, message = os.pullEvent("websocket_message")
-        if message == "HELLO GAMBIT" then 
-            log("HANDSHAKE GOOD","PROCEEDING GAMBIT"); 
-            break 
-        else 
-            log("Incorrect handshake",message," shutting down");
-            os.shutdown()
-        end
-    else
-        if(string.find(reason,"getStatus: 501 Not Implemented") or string.find(reason,"Message is too large")) then
-            local t = 21;
-            while true do
-                t = t - 1
-                log("no such server accepting for given server name [" .. server .. "]","\nreboot in ", tostring(t) .. "s");
-                os.sleep(1)
-                if t == 0 then break end
+parallel.waitForAny(function()
+    while true do
+        __printHeader();
+        log("try to connect to server @ [ws://" .. url .."/" .. server.."]");
+        sock,reason = http.websocket("ws://" .. url .."/" .. server)
+        if(sock) then
+            log("Connected. Sending handshake.");
+            local event, murl, message
+            event, murl, message = os.pullEvent("websocket_message")
+            if message == "HELLO GAMBIT" then 
+                log("Handshake successful."); 
+                break 
+            else 
+                log("Incorrect handshake",message," shutting down");
+                os.sleep(1.5)
+                os.shutdown()
             end
-            os.reboot()
+        else
+            if(string.find(reason,"getStatus: 501 Not Implemented") or string.find(reason,"Message is too large")) then
+                local t = 5;
+                while true do
+                    t = t - 1
+                    __printHeader();
+                    log("No such server accepting for given server name [" .. server .. "]","\nreboot in ", tostring(t) .. "s");
+                    os.sleep(1)
+                    if t == 0 then break end
+                end
+                os.reboot()
+            end
         end
+        os.sleep(1);
     end
 end
-if(not sock) then log("how did you get here ?");return end
-log("GAMBIT ACTIVE: ",type(sock) == "table")
-log("SEND IDENTITY...")
+)
+if(not sock) then log("error!!!, how did you get here ?");return end
+__printHeader();
+log("Transmitting identity")
 send({Identity=os.getComputerID(),Label=os.getComputerLabel()},"Identity")
-log("SENT.","PROCEED TO MESSAGE EXPECTATION")
+__printHeader();
 message_dequeue()
 
 
