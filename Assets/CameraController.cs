@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
@@ -16,9 +17,12 @@ public class CameraController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        this.transform.position += (this.gameObject.transform.forward * movement.y) * (Time.smoothDeltaTime*16);
-        this.transform.position += (this.gameObject.transform.right * movement.x) * (Time.smoothDeltaTime * 16);
-        this.transform.position += (this.gameObject.transform.up * flightChange) * (Time.smoothDeltaTime * 10);
+        if(!EventSystem.current.IsPointerOverGameObject())
+        {
+            this.transform.position += (this.gameObject.transform.forward * movement.y) * (Time.smoothDeltaTime*16);
+            this.transform.position += (this.gameObject.transform.right * movement.x) * (Time.smoothDeltaTime * 16);
+            this.transform.position += (this.gameObject.transform.up * flightChange) * (Time.smoothDeltaTime * 10);
+        }
 
         this.transform.Rotate(new Vector3(0,1,0) * (look.x * (Time.smoothDeltaTime * 20)) );
         this.transform.Rotate(new Vector3(1,0,0) * ((-look.y) * (Time.smoothDeltaTime * 20)) );

@@ -316,6 +316,7 @@ public class MissionControl : MonoBehaviour
 
     public void SaveData()
     {
+        string serverName = WebsocketServer.Instance.serverName;
         Debug.Log("Saving Blocks...");
         //Save Blocks :
         List<GambitBlock> blocks = FindObjectsByType<GambitBlock>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID).ToList();
@@ -335,7 +336,7 @@ public class MissionControl : MonoBehaviour
         string blockDataSerialized = JsonConvert.SerializeObject(organised);
         //now that we organised blocks lets serialize;
         Debug.Log("SERIALIAZED BLOCKS BOSS - " + blockDataSerialized);
-        string blockSavePath = Path.Combine(Application.persistentDataPath, "Save", "blocks.sav");
+        string blockSavePath = Path.Combine(Application.persistentDataPath, "Save", serverName, "blocks.sav");
         File.WriteAllText(blockSavePath, blockDataSerialized);
         //save turtles :
 
@@ -352,15 +353,17 @@ public class MissionControl : MonoBehaviour
         string turtleDataSerialized = JsonConvert.SerializeObject(turtles_organised);
         //now that we organised blocks lets serialize;
         Debug.Log("SERIALIAZED TURTLES BOSS - " + turtleDataSerialized);
-        string turtleSavePath = Path.Combine(Application.persistentDataPath, "Save", "turtles.sav");
+        string turtleSavePath = Path.Combine(Application.persistentDataPath, "Save", serverName, "turtles.sav");
         File.WriteAllText(turtleSavePath, turtleDataSerialized);
 
     }
 
     public void LoadData()
     {
+        string serverName = WebsocketServer.Instance.serverName;
         //load blocks :
-        string blockSavePath = Path.Combine(Application.persistentDataPath, "Save", "blocks.sav");
+        string blockSavePath = Path.Combine(Application.persistentDataPath, "Save", serverName, "blocks.sav");
+        Debug.LogError("Load from " + blockSavePath);
         string blockLoadData = File.ReadAllText(blockSavePath);
         Dictionary<string, List<Dictionary<string, object>>> blockNames = JsonConvert.DeserializeObject<Dictionary<string, List<Dictionary<string, object>>>>(blockLoadData);
         foreach (var blockNameData in blockNames)
@@ -381,12 +384,8 @@ public class MissionControl : MonoBehaviour
 
         }
 
-
-
-
-
         //load turtles :
-        string turtleLoadPath = Path.Combine(Application.persistentDataPath, "Save", "turtles.sav");
+        string turtleLoadPath = Path.Combine(Application.persistentDataPath, "Save", serverName, "turtles.sav");
         string turtleLoadData = File.ReadAllText(turtleLoadPath);
         Dictionary<string, Dictionary<string, object>> turtles = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(turtleLoadData);
         foreach (var turtle in turtles)

@@ -14,6 +14,10 @@ public class UIReference : MonoBehaviour
 
     public GameObject ExternalInventory;
 
+    public GameObject EvaluateInput;
+    public GameObject DoEvaluate;
+
+
 
 
     // Start is called before the first frame update
