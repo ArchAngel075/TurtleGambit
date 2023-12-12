@@ -838,7 +838,7 @@ parallel.waitForAny(function()
                     os.sleep(1)
                     if t == 0 then break end
                 end
-                os.reboot()
+                os.shutdown()
             end
         end
         os.sleep(1);

@@ -113,12 +113,9 @@ if not fs.exists("json.lua") then
     print("Turtle JSON module received successfully...");
     os.sleep(1.5)
 end
+os.sleep(1.5)
 print("Loading Brain...");
 os.sleep(1.5)
+print("ready")
+os.sleep(1.5)
 require("brain")
-
-
-
-
-
-
