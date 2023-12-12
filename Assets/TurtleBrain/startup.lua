@@ -28,15 +28,21 @@ print("Version [" .. __version__.."]")
 
 local env = getfenv().arg[0];
 if env == "disk/startup.lua" then
-    print("Turtle detected Gambit running from a disk. Will attempt to install Turtle Brain using version ["..__version__.."]")
+    print("Turtle detected Gambit running from a disk. Will attempt to install Turtle Bootloader using version ["..__version__.."]")
     os.sleep(1.5);
+    if fs.exists("startup.lua") then
+        fs.delete("startup.lua");
+    end
+    if fs.exists("brain.lua") then
+        fs.delete("brain.lua");
+    end
     local url = "https://raw.githubusercontent.com/ArchAngel075/TurtleGambit/"..__version__.."/Assets/TurtleBrain/startup.lua"
     local fetch = http.get(url);
     local brainFile = fs.open("startup.lua","w");
     brainFile.write(fetch.readAll())
     brainFile.flush()
     brainFile.close()
-    print("Brain downloaded successfully.")
+    print("Bootloader downloaded successfully.")
     os.sleep(1.5)
 
     --copy _address and _server files
@@ -93,6 +99,7 @@ if not fs.exists("brain.lua") then
     brainFile.close()
     print("Turtle Brain received successfully...");
     os.sleep(1.5)
+    os.reboot()
 end
 
 if not fs.exists("json.lua") then
@@ -106,6 +113,7 @@ if not fs.exists("json.lua") then
     brainFile.close()
     print("Turtle JSON module received successfully...");
     os.sleep(1.5)
+    os.reboot()
 end
 print("Loading Brain...");
 os.sleep(1.5)
