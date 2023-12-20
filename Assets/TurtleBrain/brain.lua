@@ -814,8 +814,8 @@ end
 parallel.waitForAny(function()
     while true do
         __printHeader();
-        log("try to connect to server @ [ws://" .. url .."/" .. server.."]");
-        sock,reason = http.websocket("ws://" .. url .."/" .. server)
+        log("try to connect to server @ [wss://" .. url .."/" .. server.."]");
+        sock,reason = http.websocket("wss://" .. url .."/" .. server)
         if(sock) then
             log("Connected. Sending handshake.");
             local event, murl, message
