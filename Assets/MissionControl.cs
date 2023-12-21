@@ -21,6 +21,8 @@ public class MissionControl : MonoBehaviour
 
     public event Action<GambitTurtle> OnTurtleCreated;
 
+    public static string MinecraftLocation = "C:\\Users\\jaco\\AppData\\Roaming\\PrismLauncher\\instances\\All of Fabric 6 - AOF6(2)\\minecraft";
+
 
     // Start is called before the first frame update
     void Start()
@@ -461,7 +463,21 @@ public class MissionControl : MonoBehaviour
     public static string FindBlockTexture(string blockName)
     {
         Debug.Log("Try Find texture for block : [" + blockName + "]");
-        if(blockName.StartsWith("minecraft:"))
+
+        /*Take a game location and search every mod in the mods folder
+         *If the mod has a [fabric.mod.json] we can read the json and extract an "id" key that supposedly matches the prefix of names.
+         * If the block name prefix matches that mod (fast track for minecraft: prefix) then scan the assets of that mod?
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+        */
+
+
+        if (blockName.StartsWith("minecraft:"))
         {
             string fileName = blockName.Replace("minecraft:", "") +".png";
             string filePath = Path.Combine(Application.persistentDataPath,"Textures","block", fileName);
