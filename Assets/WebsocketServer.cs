@@ -29,7 +29,7 @@ public class WebsocketServer : MonoBehaviour
     {
         Instance = this;
 
-        wssv = new WebSocketServer(System.Net.IPAddress.Any , 5757);
+        wssv = new WebSocketServer(System.Net.IPAddress.Parse("127.0.0.1") , 5757);
 
         // Add the WebSocket service
         wssv.AddWebSocketService<WebSocketConnection>("/" + serverName, s => {
