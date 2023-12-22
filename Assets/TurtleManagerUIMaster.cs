@@ -275,6 +275,15 @@ public class TurtleManagerUIMaster : MonoBehaviour
         lastSelected = slotsGo.GetComponent<UIInventorySlot>();
     }
 
+    public void ScaryForceRedownload()
+    {
+        if( selectedTurtle != null )
+        {
+            selectedTurtle.Send("fs.delete('brain.lua'); os.reboot();");
+        }
+    }
+
+
     private void RefreshSlots(Dictionary<int, GambitSlot> slots)
     {
         foreach (var slot in slots)
@@ -668,21 +677,21 @@ public class TurtleManagerUIMaster : MonoBehaviour
     public void OnSetPositionX(string xAsString)
     {
         Vector3Int current = CoordinateConverter.UnityToMinecraft(selectedTurtle.transform.position);
-        selectedTurtle.SetLocation(int.Parse(xAsString), current.y, current.z);
+        selectedTurtle.SetLocation(Mathf.FloorToInt(int.Parse(xAsString)), current.y, current.z);
         CameraMoveToTurtle();
     }
 
     public void OnSetPositionY(string yAsString)
     {
         Vector3Int current = CoordinateConverter.UnityToMinecraft(selectedTurtle.transform.position);
-        selectedTurtle.SetLocation(current.x, int.Parse(yAsString), current.z);
+        selectedTurtle.SetLocation(current.x, Mathf.FloorToInt(int.Parse(yAsString)), current.z);
         CameraMoveToTurtle();
     }
 
     public void OnSetPositionZ(string zAsString)
     {
         Vector3Int current = CoordinateConverter.UnityToMinecraft(selectedTurtle.transform.position);
-        selectedTurtle.SetLocation(current.x, current.y, int.Parse(zAsString));
+        selectedTurtle.SetLocation(current.x, current.y, Mathf.FloorToInt(int.Parse(zAsString)));
         CameraMoveToTurtle();
     }
 

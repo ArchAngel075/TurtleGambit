@@ -350,6 +350,8 @@ public class MissionControl : MonoBehaviour
         Dictionary<string, object>  turtles_organised = new Dictionary<string, object>();
         foreach (GambitTurtle turtle in turtles)
         {
+            Vector3Int pos = CoordinateConverter.UnityToMinecraft(turtle.transform.position);
+            Debug.LogError("Y POS AS " + "(" + pos.x + "," + pos.y + "," + pos.z + ")");
             turtles_organised.Add(turtle.name, turtle.PrepareSaveData());
         }
         string turtleDataSerialized = JsonConvert.SerializeObject(turtles_organised);
@@ -400,6 +402,7 @@ public class MissionControl : MonoBehaviour
                 ((JObject)turtleProperties["position"]).Value<int>("y"),
                 ((JObject)turtleProperties["position"]).Value<int>("z")
             );
+            Debug.LogError("LOADED FROM FILE THE TURTLES POSITION AS (" + vec3int.x + "," + vec3int.y + "," + vec3int.z + ")");
             long dir = turtleProperties["direction"];
             Debug.Log("dir " + dir.ToString());
             string dim = (string)turtleProperties["dimension"];
