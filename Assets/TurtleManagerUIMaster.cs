@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 public class TurtleManagerUIMaster : MonoBehaviour
 {
@@ -177,6 +178,21 @@ public class TurtleManagerUIMaster : MonoBehaviour
         }
     }
 
+    public void CameraMoveToTurtle()
+    {
+        if (selectedTurtle != null)
+        {
+            Camera cam = GameObject.Find("Main Camera").GetComponent<Camera>();
+            cam.transform.position = selectedTurtle.transform.position - (selectedTurtle.transform.forward * 6) + (Vector3.up * 3);
+            cam.transform.LookAt(selectedTurtle.transform.position);
+        } else
+        {
+            Camera cam = GameObject.Find("Main Camera").GetComponent<Camera>();
+            cam.transform.position = Vector3.zero;
+            cam.transform.rotation = Quaternion.identity;
+        }
+    }
+
     public void OnTurtleSelected()
     {
         TMPro.TMP_Dropdown drop = GameObject.Find("TurtleSelection").transform.GetComponentInChildren<TMPro.TMP_Dropdown>();
@@ -200,9 +216,7 @@ public class TurtleManagerUIMaster : MonoBehaviour
         selectedTurtle.OnSlotsChanged += RefreshSlots;
         selectedTurtle.OnSelectedSlotChanged += UpdateSelectedSlot;
         RefreshTurtleDetails();
-        Camera cam = GameObject.Find("Main Camera").GetComponent<Camera>();
-        cam.transform.position = selectedTurtle.transform.position - (selectedTurtle.transform.forward * 6) + (Vector3.up*3);
-        cam.transform.LookAt(selectedTurtle.transform.position);
+        CameraMoveToTurtle();
 
         if (selectedTurtle.isStale()) 
         {
@@ -649,6 +663,27 @@ public class TurtleManagerUIMaster : MonoBehaviour
             }
         }
         return false;
+    }
+
+    public void OnSetPositionX(string xAsString)
+    {
+        Vector3Int current = CoordinateConverter.UnityToMinecraft(selectedTurtle.transform.position);
+        selectedTurtle.SetLocation(int.Parse(xAsString), current.y, current.z);
+        CameraMoveToTurtle();
+    }
+
+    public void OnSetPositionY(string yAsString)
+    {
+        Vector3Int current = CoordinateConverter.UnityToMinecraft(selectedTurtle.transform.position);
+        selectedTurtle.SetLocation(current.x, int.Parse(yAsString), current.z);
+        CameraMoveToTurtle();
+    }
+
+    public void OnSetPositionZ(string zAsString)
+    {
+        Vector3Int current = CoordinateConverter.UnityToMinecraft(selectedTurtle.transform.position);
+        selectedTurtle.SetLocation(current.x, current.y, int.Parse(zAsString));
+        CameraMoveToTurtle();
     }
 
     public void OpenVanillaFront()
