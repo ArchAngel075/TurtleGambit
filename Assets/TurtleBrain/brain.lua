@@ -481,29 +481,45 @@ end
 ------------------------
 helpers = {};
 helpers.forward = function() 
-    turtle.forward();
-    helpers.observeMyLocation("forward");
+    local try, reason = turtle.forward();
+    if try then
+        helpers.observeMyLocation("forward");
+    else
+        report(reason)
+    end
     helpers.observeFront();
     helpers.observeDown();
     helpers.observeUp();
 end
 helpers.back = function() 
-    turtle.back();
-    helpers.observeMyLocation("back");
+    local try,reason = turtle.back();
+    if try then
+        helpers.observeMyLocation("back");
+    else
+        report(reason)
+    end
     helpers.observeFront();
     helpers.observeDown();
     helpers.observeUp();
 end
 helpers.up = function() 
-    turtle.up();
-    helpers.observeMyLocation("up");
+    local try reason = turtle.up();
+    if try then
+        helpers.observeMyLocation("up");
+    else
+        report(reason)
+    end
     helpers.observeFront();
     helpers.observeDown();
     helpers.observeUp();
 end
 helpers.down= function() 
-    turtle.down();
-    helpers.observeMyLocation("down");
+    local try, reason = turtle.down();
+    if try then
+        helpers.observeMyLocation("down");
+    else
+        report(reason)
+    end
     helpers.observeFront();
     helpers.observeDown();
     helpers.observeUp();
