@@ -140,13 +140,16 @@ public class GambitTurtle : MonoBehaviour
     public void SetLocation(int x, int y, int z)
     {
         //this.Location = new GambitLocation(x,y,z);
-        this.transform.position = CoordinateConverter.MinecraftToUnity(new Vector3(x, y, z));
+        Debug.LogError("FROM INPUTS OF " + "(" + x + "," + y + "," + z + ")");
+        this.transform.position = CoordinateConverter.MinecraftToUnity(new Vector3Int(x, y, z));
         TMPro.TMP_InputField dpx = UIReference.instance.PositionX.GetComponent<TMPro.TMP_InputField>();
         TMPro.TMP_InputField dpy = UIReference.instance.PositionY.GetComponent<TMPro.TMP_InputField>();
         TMPro.TMP_InputField dpz = UIReference.instance.PositionZ.GetComponent<TMPro.TMP_InputField>();
         dpx.SetTextWithoutNotify(x.ToString());
         dpy.SetTextWithoutNotify(y.ToString());
         dpz.SetTextWithoutNotify(z.ToString());
+        Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
+        Debug.LogError("X POS AS " + "(" + pos.x + "," + pos.y + "," + pos.z + ")");
     }
 
     public void RotateLeft()
@@ -206,9 +209,11 @@ public class GambitTurtle : MonoBehaviour
     /// <returns></returns>
     public object PrepareSaveData()
     {
+        Debug.LogError("PREPARING TURTLE SAVE DATA");
         Dictionary<string, object> toSave = new Dictionary<string, object>();
         Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
-        toSave.Add("position", new Int3(pos));
+        Debug.LogError("Z POS AS " + "(" + pos.x + "," + pos.y + "," + pos.z + ")");
+        toSave.Add("position", pos);
         toSave.Add("direction", this.Direction);
         toSave.Add("dimension", this.Dimension.name);
         toSave.Add("identity", this.Identity);
@@ -221,7 +226,7 @@ public class GambitTurtle : MonoBehaviour
             slots[item.Key] = data;
         }
         toSave.Add("inventory", slots);
-
+        Debug.LogError("TURTLE SAVE DATA PREPARED");
         //toSave.Add("m")
         return toSave;
     }
@@ -606,22 +611,22 @@ public class CoordinateConverter
     // Convert Minecraft coordinates to Unity coordinates
     public static Vector3Int MinecraftToUnity(Vector3 minecraftCoords)
     {
-        return new Vector3Int((int)minecraftCoords.x, (int)minecraftCoords.y, (int)-minecraftCoords.z);
+        return new Vector3Int(Mathf.CeilToInt(minecraftCoords.x), Mathf.CeilToInt(minecraftCoords.y), Mathf.CeilToInt(-minecraftCoords.z));
     }
 
     public static Vector3Int MinecraftToUnity(Vector3Int minecraftCoords)
     {
-        return new Vector3Int((int)minecraftCoords.x, (int)minecraftCoords.y, (int)-minecraftCoords.z);
+        return new Vector3Int(Mathf.CeilToInt(minecraftCoords.x), Mathf.CeilToInt(minecraftCoords.y), Mathf.CeilToInt(-minecraftCoords.z));
     }
 
     // Convert Unity coordinates to Minecraft coordinates
     public static Vector3Int UnityToMinecraft(Vector3 unityCoords)
     {
-        return new Vector3Int((int)unityCoords.x, (int)unityCoords.y, (int)-unityCoords.z);
+        return new Vector3Int(Mathf.CeilToInt(unityCoords.x), Mathf.CeilToInt(unityCoords.y), Mathf.CeilToInt(-unityCoords.z));
     }
 
     public static Vector3Int UnityToMinecraft(Vector3Int unityCoords)
     {
-        return new Vector3Int((int)unityCoords.x, (int)unityCoords.y, (int)-unityCoords.z);
+        return new Vector3Int(Mathf.CeilToInt(unityCoords.x), Mathf.CeilToInt(unityCoords.y), Mathf.CeilToInt(-unityCoords.z));
     }
 }

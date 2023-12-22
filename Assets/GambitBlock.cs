@@ -155,7 +155,7 @@ public class GambitBlock : MonoBehaviour
     public void SetLocation(Vector3Int vec3)
     {
         Debug.LogWarning("__OBSERVE__ SET MY POSITION BLOCK AS " + (vec3) + " OR UNITY : " + CoordinateConverter.MinecraftToUnity(vec3));
-        this.transform.position = (Vector3)CoordinateConverter.MinecraftToUnity(vec3);
+        this.transform.position = CoordinateConverter.MinecraftToUnity(vec3);
     }
 
     public void Observe(string details) {
