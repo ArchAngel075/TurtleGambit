@@ -1,3 +1,5 @@
+using System.IO;
+using System.IO.Compression;
 using System.Text;
 using UnityEngine;
 using WebSocketSharp;
@@ -78,12 +80,36 @@ public class WebSocketConnection : WebSocketBehavior
         //Debug.Log("Time Since Last Ping Pong :" + timeSinceLastPing);
     }
 
+    public static Stream GenerateStreamFromString(string s)
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream);
+        writer.Write(s);
+        writer.Flush();
+        stream.Position = 0;
+        return stream;
+    }
+
     public void Dispatch(string s)
     {
         //Debug.Log("DISPATCH [" + s + "]");
         if(IsAlive)
         {
-            Send(Encoding.UTF8.GetBytes(s));
+            byte[] compressedData = new byte[0];
+            byte[] b = Encoding.UTF8.GetBytes(s);
+            using (var outStream = new MemoryStream())
+            {
+                using (var compress = new DeflateStream(outStream, CompressionMode.Compress, true))
+                {
+                    compress.Write(b, 0, b.Length);
+                    compress.Flush();
+                    compress.Close();
+                }
+                compressedData = outStream.ToArray();
+            }
+            // Debug.LogError("compressed data from " + (b.Length.ToString()) + " to " + compressedData.Length.ToString());
+            Send(compressedData);
+            //Send(Encoding.UTF8.GetBytes(s));
         } else
         {
             //turtle.Status = GambitTurtleStatus.Unloaded;
@@ -115,7 +141,7 @@ public class WebSocketConnection : WebSocketBehavior
         }
     }
 
-    protected override void OnError(ErrorEventArgs e)
+    protected override void OnError(WebSocketSharp.ErrorEventArgs e)
     {
         //base.OnError(e);
         Debug.LogError(e.Message);

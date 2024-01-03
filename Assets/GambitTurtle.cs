@@ -148,8 +148,10 @@ public class GambitTurtle : MonoBehaviour
         dpx.SetTextWithoutNotify(x.ToString());
         dpy.SetTextWithoutNotify(y.ToString());
         dpz.SetTextWithoutNotify(z.ToString());
-        Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
-        Debug.LogError("X POS AS " + "(" + pos.x + "," + pos.y + "," + pos.z + ")");
+        //Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
+        //Debug.LogError("X POS AS " + "(" + pos.x + "," + pos.y + "," + pos.z + ")");
+        //update rendering of nearby blocks so that they reflect :
+        MissionControl.Instance.UpdateBlockRenderRespectTo(this.transform.position, 12);
     }
 
     public void RotateLeft()
@@ -236,21 +238,37 @@ public class GambitTurtle : MonoBehaviour
         Debug.LogWarning("__OBSERVE__ block [" + observation.details.name + " in direction [" + relativeDir + "]");
         //pos = my position in minecraft;
         //offset = my position in minecraft forward?
-        Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
+        Vector3Int pos = new Vector3Int((int)this.transform.position.x, (int)this.transform.position.y, (int)this.transform.position.z);
         if(relativeDir == "forward")
         {
-            Debug.LogWarning("__OBSERVE__ I am at location " + this.transform.position + " and forwards is " + this.transform.forward + " and the sum of those is " + (this.transform.position + this.transform.forward).ToString());
-            pos += CoordinateConverter.UnityToMinecraft(this.transform.forward);
+
+            //Debug.LogWarning("__OBSERVE__ I am at location " + this.transform.position + " and forwards is " + this.transform.forward + " and the sum of those is " + (this.transform.position + this.transform.forward).ToString());
+            //Debug.LogWarning("__OBSERVE__ IN MINECRAFT I am at location " + pos + " and forwards is " + CoordinateConverter.UnityToMinecraft(this.transform.forward) + " and the sum of those is " + (pos + CoordinateConverter.UnityToMinecraft(this.transform.forward)).ToString());
+            //Debug.LogWarning("__OBSERVE__ ALTERNATIVELY I am at location " + this.transform.position + " and forwards is " + this.transform.forward + " and the sum of those is " + (this.transform.position + this.transform.forward).ToString().ToString() + " and in MINECRAFT that would be " + CoordinateConverter.UnityToMinecraft(this.transform.position + this.transform.forward).ToString());
+            //for some goddamn reason converting pos and forwards and then summing causes wierd things to happen. so this is what i have to do instead.
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.forward+this.transform.position);
 
         }
         else if (relativeDir == "down")
         {
-            pos -= CoordinateConverter.UnityToMinecraft(this.transform.up);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position - this.transform.up);
         }
         else if (relativeDir == "up")
         {
-            pos += CoordinateConverter.UnityToMinecraft(this.transform.up);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position + this.transform.up);
         }
+        Debug.LogWarning("__OBSERVE__ the position i will be set as is :" + pos);
+        MissionControl.Instance.ObserveBlock(observation, pos, dimension);
+        MissionControl.Instance.UpdateBlockRenderRespectTo(this.transform.position, 12);
+    }
+
+    public void ObserveBlock(dynamic observation, Vector3Int offset, string dimension)
+    {
+        Debug.LogWarning("__OBSERVE__ block [" + observation.details.name + " with offset [" + offset + "] / " + CoordinateConverter.MinecraftToUnity(offset));
+        //pos = my position in minecraft;
+        //offset = my position in minecraft forward?
+        Vector3Int pos = new Vector3Int((int)this.transform.position.x, (int)this.transform.position.y, (int)this.transform.position.z);
+        pos = offset + CoordinateConverter.UnityToMinecraft(pos);
         Debug.LogWarning("__OBSERVE__ the position i will be set as is :" + pos);
         MissionControl.Instance.ObserveBlock(observation, pos, dimension);
     }
@@ -265,26 +283,27 @@ public class GambitTurtle : MonoBehaviour
     /// </returns>
     public Vector3Int PositionOffsetBySide(string side)
     {
+        Debug.LogError("offset by side " + side);
         Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
         if (side == "forward" || side == "front")
         {
-            pos += CoordinateConverter.UnityToMinecraft(this.transform.forward);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position + this.transform.forward);
         }
         else if (side == "down" || side == "bottom")
         {
-            pos -= CoordinateConverter.UnityToMinecraft(this.transform.up);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position - this.transform.up);
         }
         else if (side == "up" || side == "top")
         {
-            pos += CoordinateConverter.UnityToMinecraft(this.transform.up);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position+this.transform.up);
         }
         else if (side == "right")
         {
-            pos += CoordinateConverter.UnityToMinecraft(this.transform.right);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position+this.transform.right);
         }
         else if (side == "left")
         {
-            pos -= CoordinateConverter.UnityToMinecraft(this.transform.right);
+            pos = CoordinateConverter.UnityToMinecraft(this.transform.position - this.transform.right);
         }
 
         return pos;
@@ -306,6 +325,7 @@ public class GambitTurtle : MonoBehaviour
         {
             return;
         }
+        message = message.Replace(";;", ";");
         string to_send = new EvalMessage(message, this.Identity).Prepare();
         this.Stream.to_turtle_messages.Enqueue(to_send);  
     }
@@ -523,6 +543,22 @@ public class GambitTurtle : MonoBehaviour
         Send("helpers.dropUp();");
     }
 
+    //Use
+    public void UseFront()
+    {
+        Send("helpers.use();");
+    }
+
+    public void UseDown()
+    {
+        Send("helpers.useDown();");
+    }
+
+    public void UseUp()
+    {
+        Send("helpers.useUp();");
+    }
+
     public void TransferFromTo(int from, int to, int count=1)
     {
         Send("helpers.transferTo(" + from +","+ to + ", " + count +");");
@@ -535,7 +571,51 @@ public class GambitTurtle : MonoBehaviour
 
     public void Put(string side, int slotFrom, int count, int slotTo)
     {
-        Send("put(\"" + side + "\"," + slotFrom + "," + count + "," + slotTo + ");");
+        //Send("put(\"" + side + "\"," + slotFrom + "," + count + "," + slotTo + ");");
+        /////
+        Debug.LogError("Intent to: Put `" + side + "`");
+        bool found = false;
+        GambitBlock b = null;
+        Vector3Int blockPos;
+
+        if (side == "front" || side == "")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.forward + this.transform.position);
+        }
+        else if (side == "down")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position - this.transform.up);
+        }
+        else if (side == "up")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position + this.transform.up);
+        }
+        else
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position);
+        }
+        found = MissionControl.Instance.TryGetBlock(blockPos, this.Dimension.name, out b);
+
+        if (found)
+        {
+            Debug.LogError("Put Intent: block Found --" + b.blockName);
+
+            Driver driver = DriverManager.Instance.FindDriverForEvent(DriverManager.DrivenEvents.OnMoveFromTurtleToBlock, b.blockName);
+            Debug.LogError("Found driver for event `OnMoveFromTurtleToBlock` => " + driver.GetNamespace());
+            string function = driver.GetFunctionForEvent(DriverManager.DrivenEvents.OnMoveFromTurtleToBlock);
+            string call = Driver.AttachParams(function, new string[] {
+                Driver.StringyParam(side),
+                slotFrom.ToString(),
+                count.ToString(),
+                slotTo.ToString()
+            });
+            Debug.LogError("Try and call the following on turtle : `" + call + "`");
+            Send(call);
+        }
+        else
+        {
+            Debug.LogError("Put Intent, block NOT FOUND");
+        }
     }
     public void moveExternal(string side, int slotFrom, int count, int slotTo)
     {
@@ -545,27 +625,166 @@ public class GambitTurtle : MonoBehaviour
         Debug.LogError("count " + count);
         Debug.LogError("slotTo " + slotTo);
         Debug.LogError(")");
-        Send("moveExternal(\"" + side + "\"," + slotFrom + "," + count + "," + slotTo + ");");
+        //Send("moveExternal(\"" + side + "\"," + slotFrom + "," + count + "," + slotTo + ");");
+        /////////====++++
+
+        Debug.LogError("Intent to: Open " + side);
+        bool found = false;
+        GambitBlock b = null;
+        Vector3Int blockPos;
+
+        if(side == "front")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.forward + this.transform.position);
+        } else if (side == "down")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position - this.transform.up);
+        } else if (side == "up")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position + this.transform.up);
+        } else
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position);
+        }
+        found = MissionControl.Instance.TryGetBlock(blockPos, this.Dimension.name, out b);
+
+        if (found)
+        {
+            Debug.LogError("Open Intent: block Found --" + b.blockName);
+
+            Driver driver = DriverManager.Instance.FindDriverForEvent(DriverManager.DrivenEvents.OnMoveItemInsideBlock, b.blockName);
+            Debug.LogError("Found driver for event `OnMoveItemInsideBlock` => " + driver.GetNamespace());
+            string function = driver.GetFunctionForEvent(DriverManager.DrivenEvents.OnMoveItemInsideBlock);
+            string call = Driver.AttachParams(function, new string[] { 
+                Driver.StringyParam(side), 
+                slotFrom.ToString(), 
+                count.ToString(),
+                slotTo.ToString()
+            });
+            Debug.LogError("Try and call the following on turtle : `" + call + "`");
+            Send(call);
+        }
+        else
+        {
+            Debug.LogError("Open Intent, block NOT FOUND");
+        }
 
     }
     public void Take(string side, int slotFrom, int count, int slotTo)
     {
-        Send("take(\"" + side + "\"," + slotFrom + "," + count + "," + slotTo + ");");
+        //Send("take(\"" + side + "\"," + slotFrom + "," + count + "," + slotTo + ");");
+        Debug.LogError("Intent to: Take " + side);
+        bool found = false;
+        GambitBlock b = null;
+        Vector3Int blockPos;
+
+        if (side == "front")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.forward + this.transform.position);
+        }
+        else if (side == "down")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position - this.transform.up);
+        }
+        else if (side == "up")
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position + this.transform.up);
+        }
+        else
+        {
+            blockPos = CoordinateConverter.UnityToMinecraft(this.transform.position);
+        }
+        found = MissionControl.Instance.TryGetBlock(blockPos, this.Dimension.name, out b);
+
+        if (found)
+        {
+            Debug.LogError("Take Intent: block Found --" + b.blockName);
+
+            Driver driver = DriverManager.Instance.FindDriverForEvent(DriverManager.DrivenEvents.OnMoveFromBlockToTurtle, b.blockName);
+            Debug.LogError("Found driver for event `OnMoveFromBlockToTurtle` => " + driver.GetNamespace());
+            string function = driver.GetFunctionForEvent(DriverManager.DrivenEvents.OnMoveFromBlockToTurtle);
+            string call = Driver.AttachParams(function, new string[] {
+                Driver.StringyParam(side),
+                slotFrom.ToString(),
+                count.ToString(),
+                slotTo.ToString()
+            });
+            Debug.LogError("Try and call the following on turtle : `" + call + "`");
+            Send(call);
+        }
+        else
+        {
+            Debug.LogError("Take Intent, block NOT FOUND");
+        }
     }
 
     public void OpenVanillaFront()
     {
-        Send("helpers.observeExternalInventory(\"front\")");
+        Debug.LogError("Open Front @ " + CoordinateConverter.UnityToMinecraft(this.transform.forward + this.transform.position));
+        GambitBlock b;
+        bool found = MissionControl.Instance.TryGetBlock(CoordinateConverter.UnityToMinecraft(this.transform.forward+this.transform.position), this.Dimension.name, out b);
+        
+        if(found)
+        {
+            Debug.LogError("Open Front, block Found --" + b.blockName);
+
+            Driver driver = DriverManager.Instance.FindDriverForEvent(DriverManager.DrivenEvents.OnGetBlockInventory, b.blockName);
+            Debug.LogError("Found driver for event `OnGetBlockInventory` => " + driver.GetNamespace());
+            string function = driver.GetFunctionForEvent(DriverManager.DrivenEvents.OnGetBlockInventory);
+            string call = Driver.AttachParams(function, new string[] { "\"front\"" } );
+            Debug.LogError("Try and call the following on turtle : `" + call + "`");
+            Send(call);
+        } else
+        {
+            Debug.LogError("Open Front, block NOT FOUND");
+        }
+
     }
 
     public void OpenVanillaDown()
     {
-        Send("helpers.observeExternalInventory(\"down\")");
+        Debug.LogError("Open Down @ " + CoordinateConverter.UnityToMinecraft(this.transform.position-this.transform.forward));
+        GambitBlock b;
+        bool found = MissionControl.Instance.TryGetBlock(CoordinateConverter.UnityToMinecraft(this.transform.position-this.transform.up), this.Dimension.name, out b);
+
+        if (found)
+        {
+            Debug.LogError("Open Front, block Found --" + b.blockName);
+
+            Driver driver = DriverManager.Instance.FindDriverForEvent(DriverManager.DrivenEvents.OnGetBlockInventory, b.blockName);
+            Debug.LogError("Found driver for event `OnGetBlockInventory` => " + driver.GetNamespace());
+            string function = driver.GetFunctionForEvent(DriverManager.DrivenEvents.OnGetBlockInventory);
+            string call = Driver.AttachParams(function, new string[] { "\"down\"" });
+            Debug.LogError("Try and call the following on turtle : `" + call + "`");
+            Send(call);
+        }
+        else
+        {
+            Debug.LogError("Open Front, block NOT FOUND");
+        }
     }
 
     public void OpenVanillaUp()
     {
-        Send("helpers.observeExternalInventory(\"up\")");
+        Debug.LogError("Open Up @ " + CoordinateConverter.UnityToMinecraft(this.transform.up + this.transform.position));
+        GambitBlock b;
+        bool found = MissionControl.Instance.TryGetBlock(CoordinateConverter.UnityToMinecraft(this.transform.up + this.transform.position), this.Dimension.name, out b);
+
+        if (found)
+        {
+            Debug.LogError("Open Front, block Found --" + b.blockName);
+
+            Driver driver = DriverManager.Instance.FindDriverForEvent(DriverManager.DrivenEvents.OnGetBlockInventory, b.blockName);
+            Debug.LogError("Found driver for event `OnGetBlockInventory` => " + driver.GetNamespace());
+            string function = driver.GetFunctionForEvent(DriverManager.DrivenEvents.OnGetBlockInventory);
+            string call = Driver.AttachParams(function, new string[] { "\"up\"" });
+            Debug.LogError("Try and call the following on turtle : `" + call + "`");
+            Send(call);
+        }
+        else
+        {
+            Debug.LogError("Open Front, block NOT FOUND");
+        }
     }
 
     public void RefuelFromSlot()
@@ -589,44 +808,27 @@ public class GambitTurtle : MonoBehaviour
     }
 }
 
-public class LuaUtilities
-{
-    static string TurtleMovement = @"
-
-
-    ";
-
-    static string TurtleObservations = @"
-
-    ";
-
-    public static string Build()
-    {
-        return "";
-    }
-}
-
 public class CoordinateConverter
 {
     // Convert Minecraft coordinates to Unity coordinates
     public static Vector3Int MinecraftToUnity(Vector3 minecraftCoords)
     {
-        return new Vector3Int(Mathf.CeilToInt(minecraftCoords.x), Mathf.CeilToInt(minecraftCoords.y), Mathf.CeilToInt(-minecraftCoords.z));
+        return new Vector3Int(Mathf.CeilToInt(minecraftCoords.x), Mathf.CeilToInt(minecraftCoords.y), -Mathf.CeilToInt(minecraftCoords.z));
     }
 
     public static Vector3Int MinecraftToUnity(Vector3Int minecraftCoords)
     {
-        return new Vector3Int(Mathf.CeilToInt(minecraftCoords.x), Mathf.CeilToInt(minecraftCoords.y), Mathf.CeilToInt(-minecraftCoords.z));
+        return new Vector3Int(Mathf.CeilToInt(minecraftCoords.x), Mathf.CeilToInt(minecraftCoords.y), -Mathf.CeilToInt(minecraftCoords.z));
     }
 
     // Convert Unity coordinates to Minecraft coordinates
     public static Vector3Int UnityToMinecraft(Vector3 unityCoords)
     {
-        return new Vector3Int(Mathf.CeilToInt(unityCoords.x), Mathf.CeilToInt(unityCoords.y), Mathf.CeilToInt(-unityCoords.z));
+        return new Vector3Int(Mathf.CeilToInt(unityCoords.x), Mathf.CeilToInt(unityCoords.y), -Mathf.CeilToInt(unityCoords.z));
     }
 
     public static Vector3Int UnityToMinecraft(Vector3Int unityCoords)
     {
-        return new Vector3Int(Mathf.CeilToInt(unityCoords.x), Mathf.CeilToInt(unityCoords.y), Mathf.CeilToInt(-unityCoords.z));
+        return new Vector3Int(Mathf.CeilToInt(unityCoords.x), Mathf.CeilToInt(unityCoords.y), -Mathf.CeilToInt(unityCoords.z));
     }
 }

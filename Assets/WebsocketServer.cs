@@ -29,7 +29,7 @@ public class WebsocketServer : MonoBehaviour
     {
         Instance = this;
 
-        wssv = new WebSocketServer(System.Net.IPAddress.Parse("127.0.0.1") , 5757);
+        wssv = new WebSocketServer(System.Net.IPAddress.Any , 5757);
 
         // Add the WebSocket service
         wssv.AddWebSocketService<WebSocketConnection>("/" + serverName, s => {
@@ -119,6 +119,8 @@ public class WebsocketServer : MonoBehaviour
                 turtle.SetLabel(IdentityMessage.Label);
                 turtle.FetchWorldPosition();
                 turtle.SetStatus(GambitTurtleStatus.Alive);
+                DriverManager.Instance.PushDriversToTurtle(turtle);
+
             }
             else
             {
@@ -133,6 +135,8 @@ public class WebsocketServer : MonoBehaviour
                 turtle.FetchWorldPosition();
                 turtle.FetchInventory();
                 turtle.FetchSelectedSlotIndex();
+                DriverManager.Instance.PushDriversToTurtle(turtle);
+
             }
         } 
         else if (message.Type == "MultiPartMessagePleaseSend")

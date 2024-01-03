@@ -1,3 +1,6 @@
+--TODO : downloader for zlib and sha256...
+local zip = require("zlib")
+json = require("./json");
 settings.load();
 local function __printHeader()
     term.clear()
@@ -5,24 +8,34 @@ local function __printHeader()
     print("===================")
     print("===TURTLE GAMBIT===")
     print("===================")
+    --print("Drivers:");
 end
 function log(...)
-    print(...);
-    if(fs.getSize("latest.log") > 167693) then fs.delete("latest.log"); log("truncated local log file") end
+    print('>',table.unpack({...}));
+    if(fs.getSize("latest.log") > 167693) then fs.delete("latest.log");end
     local f = fs.open("latest.log","a")
     local message = {...};
-    for k,v in pairs(message) do message[k] = tostring(v) end
-    message = ">".. tostring(table.concat(message,"\t")) .. "\n";
-    f.write(message)
+    local writ = "> ";
+    for k,v in pairs(message or {}) do message[k] = tostring(v); 
+        writ = writ .. "\t" .. tostring(v)
+    end
+    writ = writ .. "\n";
+    f.write(writ)
+    f.flush();
+    -- if type(json) == "table" then message = json.encode(message) else
+    --     message = table.concat(message or {},"\t,") or "";
+    -- end
+    -- message = ">".. tostring(message) .. "\n";
+    -- f.write(message)
     f.close()
     if(sock) then
-        report(message);
+        --report(message);
     end
 end
 
 function logWithoutReport(...)
     print(...);
-    if(fs.getSize("latest.log") > 167693) then fs.delete("latest.log"); logWithoutReport("truncated local log file") end
+    if(fs.getSize("latest.log") > 167693) then fs.delete("latest.log"); end
     local f = fs.open("latest.log","a")
     local message = {...};
     for k,v in pairs(message) do message[k] = tostring(v) end
@@ -34,9 +47,9 @@ end
 function report(message)
 	local output = message
     if(sock) then
-	    send(output,"LOG");
+	    --send(output,"LOG");
     else
-        logWithoutReport("[ERROR] Unable to send report. No connection present!")
+        logWithoutReport("[ERROR] Unable to send report. No connection present! Message as follows:",message)
     end
 end
 
@@ -56,14 +69,14 @@ server = f.readAll();
 f.close()
 
 sock = false;
-local json = require("./json");
+
 function send(data,type)
-    logWithoutReport("sending",type or "MESSAGE")
+    -- logWithoutReport("sending",type or "MESSAGE")
     parallel.waitForAny(function() sock.send(json.encode({turtleId=os.getComputerID(),Type=type or 2,Data=json.encode(data)})) end);
 end
 
 function sendRaw(data)
-    logWithoutReport("sending raw")
+    logWithoutReport("sending raw",data)
     parallel.waitForAny(function() sock.send(data) end);
 end
 
@@ -95,7 +108,7 @@ end
 function takeProxyChest()
     settings.load();
     local proxy_side = settings.get("proxy_side");
-    report("proxy_side is [" .. tostring(proxy_side).. "]" )
+    log("proxy_side is [" .. tostring(proxy_side).. "]" )
     if not proxy_side then return false, "no saved position of proxy chest!" end
     if not detect(proxy_side) then
         return false, "nothing was found on the side " .. tostring(proxy_side);
@@ -313,11 +326,11 @@ function processMsg(msg)
             infile.close()
             f,err = load(data.Data,nil,"t",_ENV);
             if not f then 
-                report("something whent wrong1 >\n" .. tostring(err)) 
+                log("something broke >\n" .. tostring(err)) 
             else 
                 out,response = pcall(f); 
                 if response then 
-                    report(response)
+                    log(response)
                 end 
             end
         elseif(data.Type == "MultiPartMessageHeader") then
@@ -337,6 +350,7 @@ function processMsg(msg)
             settings.set("parts_received", parts);
             settings.save();
             if(fs.exists("_part_" .. tostring(data.PartNum))) then fs.delete("_part_" .. tostring(data.PartNum)) end
+            log("space remaining... " .. fs.getFreeSpace("") .. " need " .. (#data.Data))
             local f = fs.open("_part_" .. tostring(data.PartNum) ,"w");
             f.write(data.Data);
             f.flush()
@@ -375,6 +389,7 @@ function processMsg(msg)
             local compiled = ""
             for k,v in pairs(parts_received) do
                 log("load in '" .. "_part_" .. tostring(v) .. "'");
+                assert(fs.exists("_part_" .. tostring(v)),"file not found " .. "_part_" .. tostring(v));
                 local f = fs.open("_part_" .. tostring(v) ,"r");
                 compiled = compiled .. f.readAll();
                 f.close()
@@ -453,8 +468,17 @@ function message_dequeue()
         local event, murl, message
         -- print("Fetch next event...")
         event, murl, message = os.pullEvent()
-        if event == "websocket_message" then
+        if event == "speaker_audio_empty" then
+            if #bufferings > 0 then
+                local pop = table.remove(bufferings,1);
+                local speaker = peripheral.find("speaker")
+                speaker.playAudio(pop)
+            else
+                report("Speach completed.")
+            end
+        elseif event == "websocket_message" then
             log(event, murl, message)
+            message = zip:DecompressDeflate(message);
             log("Process Message:",message);
             if message == "__PING__" then
                 sendRaw("__PONG__")
@@ -462,24 +486,70 @@ function message_dequeue()
             else
                 processMsg(message);
             end
-        else
-            if event == 'websocket_closed' then os.reboot() end
-            if event == 'key' then 
-                if murl == 65 then report("'A' key was pressed") end
-            end
-            if event == 'turtle_inventory' then
-                for i = 1,16 do helpers.getSlotDetails(i) end
-            end
-            -- print("I dont care about event [",event,"]");
+        elseif event == 'websocket_closed' then 
+            os.reboot() 
+        elseif event == 'key' then 
+            
+        elseif event == 'turtle_inventory' then
+            helpers.observeInventory()
         end
     end
     log("END MESSAGE EXPECTATION")
 end
 
+--base sixty four encoding helper :
+-- Base64 encoding function
+function base64_encode(data)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    return ((data:gsub('.', function(x) 
+        local r,b='',x:byte()
+        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c=0
+        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+        return b:sub(c+1,c+1)
+    end)..({ '', '==', '=' })[#data%3+1])
+end
+
+-- Base64 decoding function
+function base64_decode(data)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
+end
+
 ------------------------
 ---HELPERS
 ------------------------
-helpers = {};
+helpers = {empty="GAMBIT:EMPTY"};
+Drivers = {};
+helpers.RebuildDrivers = function() 
+    log("Rebuilding Drivers...");
+    Drivers = {};
+    local DriversList = fs.list("Drivers")
+    for k,path in pairs(DriversList) do
+        if(fs.isDir("Drivers/" .. path) and fs.exists("Drivers/"..path.."/driver.lua")) then
+            log("Attempt to load driver","Drivers/"..path.."/driver");
+            Drivers[path] = require("Drivers/"..path.."/driver");
+            log("Loaded driver ",path,"at","Drivers/"..path.."/driver");
+        end
+    end 
+    log("Drivers Rebuilt...");
+    for k,driverName in pairs(Drivers) do print("#",k) end
+end
+
 helpers.forward = function() 
     local try, reason = turtle.forward();
     if try then
@@ -487,9 +557,13 @@ helpers.forward = function()
     else
         report(reason)
     end
-    helpers.observeFront();
-    helpers.observeDown();
-    helpers.observeUp();
+    if(peripheral.find("universal_scanner")) then
+        helpers.observeUPW();
+    else
+        helpers.observeFront();
+        helpers.observeDown();
+        helpers.observeUp();
+    end
 end
 helpers.back = function() 
     local try,reason = turtle.back();
@@ -498,20 +572,28 @@ helpers.back = function()
     else
         report(reason)
     end
-    helpers.observeFront();
-    helpers.observeDown();
-    helpers.observeUp();
+    if(peripheral.find("universal_scanner")) then
+        helpers.observeUPW();
+    else
+        helpers.observeFront();
+        helpers.observeDown();
+        helpers.observeUp();
+    end
 end
 helpers.up = function() 
-    local try reason = turtle.up();
+    local try, reason = turtle.up();
     if try then
         helpers.observeMyLocation("up");
     else
         report(reason)
     end
-    helpers.observeFront();
-    helpers.observeDown();
-    helpers.observeUp();
+    if(peripheral.find("universal_scanner")) then
+        helpers.observeUPW();
+    else
+        helpers.observeFront();
+        helpers.observeDown();
+        helpers.observeUp();
+    end
 end
 helpers.down= function() 
     local try, reason = turtle.down();
@@ -520,21 +602,44 @@ helpers.down= function()
     else
         report(reason)
     end
-    helpers.observeFront();
-    helpers.observeDown();
-    helpers.observeUp();
+    if(peripheral.find("universal_scanner")) then
+        helpers.observeUPW();
+    else
+        helpers.observeFront();
+        helpers.observeDown();
+        helpers.observeUp();
+    end
 end
 helpers.turnLeft = function() 
     turtle.turnLeft();
     helpers.observeMyDirection('LEFT');
-    helpers.observeFront();
+    if(peripheral.find("universal_scanner")) then
+        helpers.observeUPW();
+    else
+        helpers.observeFront();
+    end
 end
 helpers.turnRight = function() 
     turtle.turnRight();
     helpers.observeMyDirection('RIGHT');
-    helpers.observeFront();
+    if(peripheral.find("universal_scanner")) then
+        helpers.observeUPW();
+    else
+        helpers.observeFront();
+    end
 end
 
+helpers.observeUPW = function()
+    local scanner = peripheral.find("universal_scanner");
+    if scanner == nil or scanner == false then return end
+    --we have access to the powerful universal scanner
+    local scan = scanner.scan("block",1);
+    for k,block in pairs(scan) do
+        log("SCAN:",block.name,block.x,block.y,block.z)
+        local payload = {details=block, ObservationType="UPW_SCAN"};
+        send(payload,'Observation');
+    end
+end
 
 helpers.observeFront = function()
     air,inspection = turtle.inspect();
@@ -568,6 +673,22 @@ helpers.observeAll = function()
     turtle.turnRight(); helpers.observeFront();
     turtle.turnRight(); helpers.observeFront();
     turtle.turnRight(); helpers.observeFront();
+end
+
+helpers.use = function()
+    turtle.use();
+    helpers.observeFront();
+    helpers.observeInventory();
+end
+helpers.useDown = function()
+    turtle.useDown();
+    helpers.observeDown();
+    helpers.observeInventory();
+end
+helpers.useUp = function()
+    turtle.useUp();
+    helpers.observeUp();
+    helpers.observeInventory();
 end
 
 helpers.observeMyLocation = function(change)
@@ -826,12 +947,92 @@ function helpers.observeFuelLevel()
     send(payload,'Observation')
 end
 
+--a note on how (non text) files are managed.
+--generally I will strive to "put" files onto a turtle with their content as byte64 encoded.
+--the decodeFile command shall be used to futher then recode the data to its original form.
+--this preserves to the best ability the content of the file from its BYTEs than string content.
+--this is generally applied to non plain text files, such as audio (dfpwm)
+
+function helpers.proxyOnfile(filename,mode,method,data)
+    method = method or "write";
+    local f = fs.open(filename,mode or "w");
+    f[method](data);
+    f.flush()
+    f.close()
+end
+
+--decode a file by assuming its contents are base64 encoded.
+--rewrites to the file in place.
+function helpers.decodeFile(filename)
+    log("decoding file",filename)
+    local f = fs.open(filename,"r");
+    local encodedData = f.readAll();
+    f.close()
+    fs.delete(filename);
+    local f = fs.open(filename,"wb");
+    local decodedData = base64_decode(encodedData);
+    f.write(decodedData)
+    f.flush()
+    f.close()
+    log("file decoded",filename)
+end
+
+bufferings = {}
+decoder = nil
+function helpers.playAudio(phrase)
+    log("playing audio-table.")
+    if not (type(phrase) == "table") then log("ERROR","Phrase must be a table!"); return end
+    bufferings = {};
+    local speaker = peripheral.find("speaker")
+    if not speaker then log("no speaker attached") end
+    local dfpwm = require("cc.audio.dfpwm")
+    decoder = dfpwm.make_decoder()
+    for k,chunk in pairs(phrase) do
+        -- assert(#chunk <= 16 * 1024, "phrase chunk must be 16*1024")
+        local buffer = decoder(chunk)
+        bufferings[#bufferings+1] = buffer;
+    end
+    if #bufferings > 0 then
+        local pop = table.remove(bufferings,1);
+        speaker.playAudio(pop)
+        return true;
+    end
+    return false
+end
+
+function helpers.playFile(file)
+    log("Playing audio from file ",file)
+    if not fs.exists(file) then log("file not found ",file) end
+    local speaker = peripheral.find("speaker")
+    if not speaker then log("no speaker attached") end
+    local dfpwm = require("cc.audio.dfpwm")
+    decoder = dfpwm.make_decoder()
+
+    --read file then play :
+    for chunk in io.lines(file, 16 * 1024) do
+        local buffer = decoder(chunk)
+        bufferings[#bufferings+1] = buffer;
+    end
+    
+    if #bufferings > 0 then
+        local pop = table.remove(bufferings,1);
+        speaker.playAudio(pop)
+        return true;
+    end
+    return false
+end
+
 ------------------------
 parallel.waitForAny(function()
     while true do
         __printHeader();
-        log("try to connect to server @ [wss://" .. url .."/" .. server.."]");
-        sock,reason = http.websocket("wss://" .. url .."/" .. server)
+        settings.load()
+        local gambitprotocol = settings.get("gambitprotocol") or "wss";
+        settings.set("gambitprotocol",gambitprotocol)
+        log("protocol in use is",gambitprotocol);
+        local fullAddress = (gambitprotocol .. "://" .. url .."/" .. server);
+        log("try to connect to server @ ["..fullAddress.."]");
+        sock,reason = http.websocket(fullAddress)
         if(sock) then
             log("Connected. Sending handshake.");
             local event, murl, message
@@ -840,9 +1041,9 @@ parallel.waitForAny(function()
                 log("Handshake successful."); 
                 break 
             else 
-                log("Incorrect handshake",message," shutting down");
+                log("Incorrect handshake",message," rebooting.");
                 os.sleep(1.5)
-                os.shutdown()
+                os.reboot()
             end
         else
             if(string.find(reason,"getStatus: 501 Not Implemented") or string.find(reason,"Message is too large")) then
@@ -854,7 +1055,7 @@ parallel.waitForAny(function()
                     os.sleep(1)
                     if t == 0 then break end
                 end
-                os.shutdown()
+                os.reboot()
             end
         end
         os.sleep(1);
@@ -866,8 +1067,6 @@ __printHeader();
 log("Transmitting identity")
 send({Identity=os.getComputerID(),Label=os.getComputerLabel()},"Identity")
 __printHeader();
-message_dequeue()
-
-
-
--- os.reboot();
+parallel.waitForAny(function()
+    message_dequeue()
+end);

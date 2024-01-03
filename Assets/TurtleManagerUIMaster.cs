@@ -1,6 +1,8 @@
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -10,6 +12,13 @@ using UnityEngine.Video;
 
 public class TurtleManagerUIMaster : MonoBehaviour
 {
+    public int chunkSize = 256;
+    public int MaxRecordLength = 10;
+
+    public bool isRecording = false;
+    public AudioClip clip;
+    float startRecordingTime;
+
     public GambitTurtle selectedTurtle;
 
     public GameObject offlineOverlay;
@@ -28,7 +37,7 @@ public class TurtleManagerUIMaster : MonoBehaviour
     Vector2 pointerPositionAtPress;
 
     public static TurtleManagerUIMaster Instance;
-
+    public string speachCommandParamString;
 
     public void SetNoTurtlePanel(bool state)
     {
@@ -157,14 +166,15 @@ public class TurtleManagerUIMaster : MonoBehaviour
                     } 
                     else if(fromTurtle && !toTurtle)
                     {
-                        Debug.LogError("from trutle , to inventory");
-                        selectedTurtle.Put(sourceDragUISlot.slot.side, sourceDragUISlot.index, countMoved, currentlyHoveredSlot.index);
+                        Debug.LogError("from trutle , to inventory, side, index, count, index: " + string.Join(',',new string[] { sourceDragUISlot.slot.side, sourceDragUISlot.index.ToString(), countMoved.ToString(), currentlyHoveredSlot.index.ToString() }));
+                        selectedTurtle.Put(currentlyHoveredSlot.slot.side, sourceDragUISlot.index, countMoved, currentlyHoveredSlot.index);
                     } else if(!fromTurtle && !toTurtle)
                     {
                         Debug.LogError("from inventory , to inventory");
                         selectedTurtle.moveExternal(sourceDragUISlot.slot.side, sourceDragUISlot.index, countMoved, currentlyHoveredSlot.index);
                     } else if(!fromTurtle && toTurtle)
                     {
+                        Debug.LogError("from inventory , to turtle");
                         selectedTurtle.Take(sourceDragUISlot.slot.side, sourceDragUISlot.index, countMoved, currentlyHoveredSlot.index);
                     }
                 }
@@ -236,7 +246,7 @@ public class TurtleManagerUIMaster : MonoBehaviour
         TMPro.TMP_Dropdown dpRot = UIReference.instance.Rotation.GetComponentInChildren<TMPro.TMP_Dropdown>();
         int indexRot = dpRot.options.FindIndex(e => { return CardinalDirectionUtility.FromString(e.text) == selectedTurtle.Direction; });
         //Debug.LogError("selectedTurtle.Rotation index in options " + indexRot);
-        dpRot.SetValueWithoutNotify(index);
+        dpRot.SetValueWithoutNotify(indexRot);
     }
 
     public void SetTurtleDimension()
@@ -254,7 +264,7 @@ public class TurtleManagerUIMaster : MonoBehaviour
         TMP_Dropdown dp = UIReference.instance.Rotation.GetComponentInChildren<TMPro.TMP_Dropdown>();
         int selected = dp.value;
         Debug.LogError("selectedTurtle.Dimension index change to " + selected);
-        this.selectedTurtle.Direction = (CardinalDirectionEnum)selected;
+        this.selectedTurtle.Direction = CardinalDirectionUtility.FromString(dp.options[selected].text);
     }
 
 
@@ -319,7 +329,7 @@ public class TurtleManagerUIMaster : MonoBehaviour
         selectedTurtle.FetchInventory();
         selectedTurtle.FetchWorldPosition();
         selectedTurtle.FetchSelectedSlotIndex();
-        
+        DriverManager.Instance.PushDriversToTurtle(selectedTurtle);
     }
 
     // Start is called before the first frame update
@@ -332,6 +342,14 @@ public class TurtleManagerUIMaster : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(isRecording)
+        {
+            float t = Time.time;
+            if(t-startRecordingTime > 10)
+            {
+                //OnFinishRecording();
+            }
+        }
         if(selectedTurtle)
         {
             if(selectedTurtle.isStale())
@@ -762,6 +780,161 @@ public class TurtleManagerUIMaster : MonoBehaviour
             selectedTurtle.Send(command);
             UIReference.instance.EvaluateInput.GetComponentInChildren<TMP_InputField>().text = "";
         }
+    }
+
+    public void OnPushToTalkChanged(UnityEngine.InputSystem.InputAction.CallbackContext context)
+    {
+        Debug.LogError("PTT?");
+        bool isPushToTalk = context.ReadValue<float>() == 1f;
+        if (isPushToTalk)
+        {
+            OnBeginRecording();
+        } else
+        {
+            OnFinishRecording();
+        }
+    }
+
+    public void OnBeginRecording()
+    {
+        Debug.LogError("PUSH TO TALK TRUE");
+        MicrophoneSend();
+    }
+
+    public void MicrophoneSend()
+    {
+        //OnFinishRecording();
+
+        string device = Microphone.devices[0];
+        Microphone.GetDeviceCaps(device, out int minFreq, out int maxFreq);
+        Debug.LogError("Speach Start! @ " + device + " capabilities of " + minFreq + " to " + maxFreq);
+        clip = Microphone.Start(device, false, MaxRecordLength, 48000 ); //6 minutes for now?
+        startRecordingTime = Time.time;
+        isRecording = true;
+    }
+
+    public void TrimAudioFile(string fileName, int t)
+    {
+        string command = "-y -ss 0 -t {t} -i {fileName} _{fileName}".Replace("{fileName}",fileName).Replace("{t}",t.ToString());
+        Debug.LogError("trim using command `" + command + "`");
+        System.Diagnostics.Process process = new System.Diagnostics.Process();
+        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
+        startInfo.FileName = Path.Combine(Application.persistentDataPath, "ffmpeg.exe");
+        startInfo.Arguments = command;
+        startInfo.WorkingDirectory = Application.persistentDataPath;
+        startInfo.UseShellExecute = false;
+        startInfo.RedirectStandardError = true;
+        startInfo.RedirectStandardOutput = true;
+
+        process.StartInfo = startInfo;
+        process.Start();
+        process.WaitForExit(1000 * (1 + MaxRecordLength));
+    }
+
+    public void OnFinishRecording()
+    {
+        Debug.LogError("PUSH TO TALK FALSE");
+
+        isRecording = false;
+        int recordingLength = Mathf.CeilToInt((Time.time - startRecordingTime)) + 1;
+        Debug.LogError("Speach Done!" + "\tTook " + recordingLength.ToString());
+        //TimeSpan t = TimeSpan.FromSeconds(recordingLength);
+
+        string device = Microphone.devices[0];
+        Microphone.End(device);
+
+        //time of recording is based on the T slice of time
+
+        string baseFileName = "recording";
+        Debug.LogError("Using file name " + baseFileName);
+        string recordingFileName = baseFileName+".wav";
+        string dfpwmfileOnDisk = baseFileName+".dfpwm";
+
+        //-y - i _recording.wav - ac 1 - c:a dfpwm recording.dfpwm -ar 48k
+        //-y -i _recording.wav -ac 1 -c:a dfpwm recording.dfpwm -ar 48k
+        string command = speachCommandParamString;
+
+        SavWav.Save(recordingFileName, clip);
+        //saved as recording.wav ->
+        Debug.LogError("Speach Stored!");
+        Debug.LogError("trim audio file :");
+        TrimAudioFile(recordingFileName, recordingLength);
+        Debug.LogError("audio file trimmed,");
+        recordingFileName = "_" + recordingFileName; //set as output of trimmings file name
+
+        Debug.LogError("Conversion command deduced as `" + command + "`");
+
+        //convert file,
+        System.Diagnostics.Process process = new System.Diagnostics.Process();
+        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
+        startInfo.FileName = Path.Combine(Application.persistentDataPath, "ffmpeg.exe") ;
+        startInfo.Arguments = command;
+        startInfo.WorkingDirectory = Application.persistentDataPath;
+        startInfo.UseShellExecute = false;
+        startInfo.RedirectStandardError = true;
+        startInfo.RedirectStandardOutput = true;
+
+        Debug.LogError("Working from " + startInfo);
+        Debug.LogError("Working dir " + Application.persistentDataPath);
+
+
+        process.StartInfo = startInfo;
+        process.Start();
+        //will create file recording.dfpwm
+
+        // start our event pumps
+        //process.BeginOutputReadLine();
+        //process.BeginErrorReadLine();
+
+        // until we are done
+        process.WaitForExit(1000 * (1+MaxRecordLength));
+        Debug.LogError("Speach Converted! Will now send base64 bytes of " + dfpwmfileOnDisk);
+        //grab bytes of the dfpwm file
+        byte[] bytes = File.ReadAllBytes( Path.Combine(Application.persistentDataPath, dfpwmfileOnDisk) );
+        string commands;
+        
+        pushFile(dfpwmfileOnDisk, bytes, out commands);
+
+        commands += "helpers.playFile('" + dfpwmfileOnDisk + "');";
+        commands += "fs.delete('" + dfpwmfileOnDisk + "');";
+
+        selectedTurtle.Send(commands);
+    }
+
+    public void pushFile(string fileName, byte[] content, out string commands)
+    {
+        //input file content as bytes
+        //convert bytes to base64
+        string base64String = Convert.ToBase64String(content);
+        //push to turtle
+        List<string> chunks = new List<string>();
+        int cSize = chunkSize;
+
+        for (int i = 0; i < base64String.Length; i += cSize)
+        {
+            int remainingLength = Math.Min(cSize, base64String.Length - i);
+            string chunk = base64String.Substring(i, remainingLength);
+            chunks.Add(chunk);
+        }
+        commands = "";
+        //this approach is used over multiparting, seems multipart files have something wrong with excessively large data?
+        bool firstItem = true;
+        foreach (var chunk in chunks)
+        {
+            if (firstItem)
+            {
+                commands += "helpers.proxyOnfile('" + fileName + "','w','write','" + chunk + "');";
+            }
+            else
+            {
+                commands += "helpers.proxyOnfile('" + fileName + "','a','write','" + chunk + "');";
+            }
+            firstItem = false;
+        }
+        //decode.
+        commands += "helpers.decodeFile('" + fileName + "');";
     }
 
 }
