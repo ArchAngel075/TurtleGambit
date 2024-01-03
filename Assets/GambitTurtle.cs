@@ -148,10 +148,9 @@ public class GambitTurtle : MonoBehaviour
         dpx.SetTextWithoutNotify(x.ToString());
         dpy.SetTextWithoutNotify(y.ToString());
         dpz.SetTextWithoutNotify(z.ToString());
-        //Vector3Int pos = CoordinateConverter.UnityToMinecraft(this.transform.position);
-        //Debug.LogError("X POS AS " + "(" + pos.x + "," + pos.y + "," + pos.z + ")");
         //update rendering of nearby blocks so that they reflect :
         MissionControl.Instance.UpdateBlockRenderRespectTo(this.transform.position, 12);
+
     }
 
     public void RotateLeft()
