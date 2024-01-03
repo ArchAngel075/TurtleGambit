@@ -31,10 +31,11 @@ public class CardinalDirectionUtility
                 return CardinalDirectionEnum.North;
             case "east":
                 return CardinalDirectionEnum.East;
-            case "west":
-                return CardinalDirectionEnum.West;
             case "south":
                 return CardinalDirectionEnum.South;
+            case "west":
+                return CardinalDirectionEnum.West;
+            
         }
         return CardinalDirectionEnum.North;
     }

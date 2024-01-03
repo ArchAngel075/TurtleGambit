@@ -12,7 +12,7 @@ public class EvalMessage : GambitMessage
 
     public EvalMessage(string payload, string turtleId)
     {
-        this.Data = LuaUtilities.Build() + " " + payload;
+        this.Data = payload;
         this.turtleId = turtleId;
     }
 
@@ -35,7 +35,7 @@ public class MultiPartMessage : GambitMessage
     public List<MessagePart> Parts;
     public int CurrentPart;
 
-    public static int MESSAGE_PART_SIZE = 1024;
+    public static int MESSAGE_PART_SIZE = 256;
 
 
     public MultiPartMessage(string data, string turtle_identity)
@@ -330,13 +330,36 @@ public class ObservationMessage
             return;
         }
 
+        if (obs.ObservationType == "UPW_SCAN")
+        {
+            //this is a complex scan of the world. its gonna get busy...
+            Debug.LogError("Observed SCAN [" + obs.Data + "]");
+            dynamic jsonObject = JsonConvert.DeserializeObject(obs.Data);
+            jsonObject.turtleId = gambitMessage.turtleId;
+            jsonObject.Data = gambitMessage.Data;
+
+            Debug.LogError("NAME> " + jsonObject.details.name);
+            if(jsonObject.details.name == "computercraft:turtle_advanced")
+            {
+                return;
+            }
+
+            Debug.LogError("Observed a block via SCAN! Details : [" + jsonObject.details.name + "] " + ((int)jsonObject.details.z).ToString());
+            Vector3Int pos = new Vector3Int((int)jsonObject.details.x, (int)jsonObject.details.y, (int)jsonObject.details.z);
+            sourceTurtle.ObserveBlock(jsonObject, pos, sourceTurtle.Dimension.name);
+
+        }
+
         if (obs.ObservationType == "BLOCK_FORWARD")
         {
             Debug.Log("Observed BLOCK FORWARD [" + obs.Data + "]");
             dynamic jsonObject = JsonConvert.DeserializeObject(obs.Data);
             jsonObject.turtleId = gambitMessage.turtleId;
             jsonObject.Data = gambitMessage.Data;
-            
+            if (jsonObject.details.name == "computercraft:turtle_advanced")
+            {
+                return;
+            }
             //N Z subtracts
             //W X subtracts
             //
@@ -355,7 +378,10 @@ public class ObservationMessage
             dynamic jsonObject = JsonConvert.DeserializeObject(obs.Data);
             jsonObject.turtleId = gambitMessage.turtleId;
             jsonObject.Data = gambitMessage.Data;
-
+            if (jsonObject.details.name == "computercraft:turtle_advanced")
+            {
+                return;
+            }
             //N Z subtracts
             //W X subtracts
             //
@@ -374,7 +400,10 @@ public class ObservationMessage
             dynamic jsonObject = JsonConvert.DeserializeObject(obs.Data);
             jsonObject.turtleId = gambitMessage.turtleId;
             jsonObject.Data = gambitMessage.Data;
-
+            if (jsonObject.details.name == "computercraft:turtle_advanced")
+            {
+                return;
+            }
             //N Z subtracts
             //W X subtracts
             //

@@ -119,6 +119,8 @@ public class WebsocketServer : MonoBehaviour
                 turtle.SetLabel(IdentityMessage.Label);
                 turtle.FetchWorldPosition();
                 turtle.SetStatus(GambitTurtleStatus.Alive);
+                DriverManager.Instance.PushDriversToTurtle(turtle);
+
             }
             else
             {
@@ -133,6 +135,8 @@ public class WebsocketServer : MonoBehaviour
                 turtle.FetchWorldPosition();
                 turtle.FetchInventory();
                 turtle.FetchSelectedSlotIndex();
+                DriverManager.Instance.PushDriversToTurtle(turtle);
+
             }
         } 
         else if (message.Type == "MultiPartMessagePleaseSend")

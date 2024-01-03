@@ -88,6 +88,68 @@ if not fs.exists("json.lua") then
     print("Turtle JSON module received successfully...");
     os.sleep(1.5)
 end
+
+if not fs.exists("zlib.lua") then
+    __printHeader()
+    print("The turtle needs ZLIB functionality. I will attempt to fetch now...");
+    local url = "https://raw.githubusercontent.com/ArchAngel075/TurtleGambit/"..__version__.."/Assets/TurtleBrain/zlib.lua"
+    local fetch = http.get(url);
+    local brainFile = fs.open("zlib.lua","w");
+    brainFile.write(fetch.readAll())
+    brainFile.flush()
+    brainFile.close()
+    print("Turtle ZLIB module received successfully...");
+    os.sleep(1.5)
+end
+
+if not fs.exists("zlib.lua") then
+    __printHeader()
+    print("The turtle needs SHA256 functionality. I will attempt to fetch now...");
+    local url = "https://raw.githubusercontent.com/ArchAngel075/TurtleGambit/"..__version__.."/Assets/TurtleBrain/sha256.lua"
+    local fetch = http.get(url);
+    local brainFile = fs.open("sha256.lua","w");
+    brainFile.write(fetch.readAll())
+    brainFile.flush()
+    brainFile.close()
+    print("Turtle SHA256 module received successfully...");
+    os.sleep(1.5)
+end
+
+os.sleep(1.5)
+print("Loading server and address from disk.")
+--this should run before attempting to run the brain, ensuring server and address are present
+--attempt to resolve server and address :
+if(not fs.exists("_server")) then
+    local serverName = false
+    while not serverName do
+        __printHeader()
+        print("In order to function reliably the turtle requires the server name the Mission Control app is targeting.")
+        print("This would be found by the name of the server selected when the Mission Control app is started.")
+        print("Please provide server name in a file named [_server] OR alternatively please enter the name now > ");
+        read()
+        __printHeader()
+        print("DUE TO A BUG THE SERVER NAME IS LOCKED TO 'dev' for now until resolved.");
+        print("PRESS RETURN OR ENTER TO ACKNOLEDGE THIS MESSAGE");
+        serverName = 'dev';
+    end
+    local f = fs.open("_server","w")
+    f.write(serverName)
+    f.close()
+end
+
+if(not fs.exists("_address")) then
+    local addr = false;
+    while not addr do
+        __printHeader()
+        print("In order to function reliably the turtle requires the host address the Mission Control app is exposed on.")
+        print("This would be found by the address given by the ngrok approach, localhost or (DANGEROUS) your public ip.")
+        print("Please provide the address in a file named [_address] OR alternatively enter the address now >");
+        addr= read();
+    end
+    local f = fs.open("_address","w")
+    f.write(addr)
+    f.close()
+end
 os.sleep(1.5)
 print("Loading server and address from disk.")
 --this should run before attempting to run the brain, ensuring server and address are present

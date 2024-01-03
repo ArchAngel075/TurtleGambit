@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.UIElements;
 using UnityEngine;
 using static GambitBlock;
 
@@ -21,7 +22,9 @@ public class MissionControl : MonoBehaviour
 
     public event Action<GambitTurtle> OnTurtleCreated;
 
-    public static string MinecraftLocation = "C:\\Users\\jaco\\AppData\\Roaming\\PrismLauncher\\instances\\All of Fabric 6 - AOF6(2)\\minecraft";
+    //public static string MinecraftLocation = "C:\\Users\\jaco\\AppData\\Roaming\\PrismLauncher\\instances\\All of Fabric 6 - AOF6(2)\\minecraft";
+
+    public AnimationCurve fadeFalloffCurve;
 
 
     // Start is called before the first frame update
@@ -102,6 +105,7 @@ public class MissionControl : MonoBehaviour
         turtle.Direction = (CardinalDirectionEnum)direction;
         turtle.SetLocation(position.x, position.y, position.z);
         OnTurtleCreated.DynamicInvoke(turtle);
+
         return turtle;
     }
 
@@ -126,6 +130,7 @@ public class MissionControl : MonoBehaviour
         turtle.SetDimension(dim.name);
         Debug.Log("New turtle created in overworld!...");
         OnTurtleCreated.DynamicInvoke(turtle);
+
         return turtle;
     }
 
@@ -491,5 +496,21 @@ public class MissionControl : MonoBehaviour
             }
         }
         return null;
+    }
+
+    internal void UpdateBlockRenderRespectTo(Vector3 position, int r)
+    {
+        //grab those blocks in a sphere around position of radius r; shift the fade to be stronger the smaller the distance.
+        //map the fade to maximum 100% and minimum 20% ((r-dx)/r * 80)+20;
+        Collider[] hits = Physics.OverlapSphere(position, r);
+        foreach (var hit in hits)
+        {
+            if(hit.gameObject.GetComponent<GambitBlock>())
+            {
+                float fade = Vector3.Distance(position,hit.transform.position)/r;
+                
+                hit.gameObject.GetComponent<MeshRenderer>().material.SetColor("_Color", new Color(1,1,1, fadeFalloffCurve.Evaluate(fade)));
+            }
+        }
     }
 }

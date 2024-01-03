@@ -49,6 +49,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "PushToTalk",
+                    "type": "Button",
+                    "id": "04ebb90d-98ee-477f-826e-ad28ccfbf0be",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -346,6 +355,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Look enable",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f15a225c-3288-4a14-9319-a62d810b678d",
+                    "path": "<Keyboard>/t",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "PushToTalk",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
