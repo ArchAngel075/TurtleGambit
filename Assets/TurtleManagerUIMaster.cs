@@ -625,11 +625,37 @@ public class TurtleManagerUIMaster : MonoBehaviour
         }
     }
 
+    //craft
     public void Craft()
     {
         if (selectedTurtle != null)
         {
             selectedTurtle.Craft();
+        }
+    }
+
+    //Use
+    public void UseFront()
+    {
+        if (selectedTurtle != null)
+        {
+            selectedTurtle.UseFront();
+        }
+    }
+
+    public void UseDown()
+    {
+        if (selectedTurtle != null)
+        {
+            selectedTurtle.UseDown();
+        }
+    }
+
+    public void UseUp()
+    {
+        if (selectedTurtle != null)
+        {
+            selectedTurtle.UseUp();
         }
     }
 

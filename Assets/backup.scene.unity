@@ -1539,7 +1539,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1975355767}
         m_TargetAssemblyTypeName: TurtleManagerUIMaster, Assembly-CSharp
-        m_MethodName: UseDown
+        m_MethodName: DropUp
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2551,7 +2551,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1975355767}
         m_TargetAssemblyTypeName: TurtleManagerUIMaster, Assembly-CSharp
-        m_MethodName: UseFront
+        m_MethodName: DropFront
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8356,7 +8356,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1975355767}
         m_TargetAssemblyTypeName: TurtleManagerUIMaster, Assembly-CSharp
-        m_MethodName: ObserveUp
+        m_MethodName: DropUp
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -19941,7 +19941,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1975355767}
         m_TargetAssemblyTypeName: TurtleManagerUIMaster, Assembly-CSharp
-        m_MethodName: ObserveDown
+        m_MethodName: DropDown
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -23614,7 +23614,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1975355767}
         m_TargetAssemblyTypeName: TurtleManagerUIMaster, Assembly-CSharp
-        m_MethodName: ObserveFront
+        m_MethodName: DropFront
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -25873,7 +25873,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1975355767}
         m_TargetAssemblyTypeName: TurtleManagerUIMaster, Assembly-CSharp
-        m_MethodName: UseDown
+        m_MethodName: DropDown
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
