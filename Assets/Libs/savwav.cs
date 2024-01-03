@@ -28,6 +28,8 @@ using System;
 using System.IO;
 using UnityEngine;
 using System.Collections.Generic;
+using static System.Net.Mime.MediaTypeNames;
+using System.Diagnostics;
 
 public static class SavWav
 {
@@ -41,9 +43,7 @@ public static class SavWav
             filename += ".wav";
         }
 
-        var filepath = Path.Combine(Application.persistentDataPath, filename);
-
-        Debug.Log(filepath);
+        var filepath = Path.Combine(UnityEngine.Application.persistentDataPath, filename);
 
         // Make sure directory exists if user is saving to sub dir.
         Directory.CreateDirectory(Path.GetDirectoryName(filepath));
